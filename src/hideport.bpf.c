@@ -100,3 +100,25 @@ int hideport_bind_arm64_syscall(struct pt_regs *ctx)
 
     return hideport_maybe_rewrite(ctx, uaddr, addrlen);
 }
+#ifndef EPERM
+#define EPERM 1
+#endif
+
+SEC("lsm/task_alloc")
+int BPF_PROG(restrict_luna_fork, struct task_struct *task, unsigned long clone_flags, int ret)
+{
+    if (ret != 0)
+        return ret;
+
+    char comm[16];
+    bpf_get_current_comm(&comm, sizeof(comm));
+
+    if (comm[0] == 'l' && comm[1] == 'u' && comm[2] == 'n' && comm[3] == 'a' &&
+        comm[4] == '.' && comm[5] == 's' && comm[6] == 'a' && comm[7] == 'f' &&
+        comm[8] == 'e' && comm[9] == '.' && comm[10] == 'l' && comm[11] == 'u' &&
+        comm[12] == 'n' && comm[13] == 'a' && comm[14] == '\0') {
+        return -EPERM;
+    }
+
+    return 0;
+}
