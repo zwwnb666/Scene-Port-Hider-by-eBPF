@@ -1,6 +1,7 @@
 #!/system/bin/sh
 
 # Standalone Scene connect-probe hiding script.
+# Keep this separate from the eBPF loader; it is packaged into service.d.
 
 SCRIPT_DIR=${0%/*}
 case "$SCRIPT_DIR" in
@@ -9,7 +10,7 @@ case "$SCRIPT_DIR" in
 esac
 
 PKG_NAME="com.omarea.vtools"
-PORT=8765
+PORTS="8765 8788"
 LOG_FILE="$MODDIR/hide_scene.log"
 
 log_msg() {
@@ -41,20 +42,24 @@ fi
 
 log_msg "Successfully extracted valid UID: $SCENE_UID. Applying iptables rules..."
 
-for cmd in iptables ip6tables; do
-    for iface in "-o lo " ""; do
-        while $cmd -D OUTPUT ${iface}-p tcp --dport $PORT -m owner --uid-owner 0 -j ACCEPT 2>/dev/null; do :; done
-        while $cmd -D OUTPUT ${iface}-p tcp --dport $PORT -m owner --uid-owner 2000 -j ACCEPT 2>/dev/null; do :; done
-        while $cmd -D OUTPUT ${iface}-p tcp --dport $PORT -m owner --uid-owner $SCENE_UID -j ACCEPT 2>/dev/null; do :; done
-        while $cmd -D OUTPUT ${iface}-p tcp --dport $PORT -j REJECT --reject-with tcp-reset 2>/dev/null; do :; done
+for PORT in $PORTS; do
+    for cmd in iptables ip6tables; do
+        for iface in "-o lo " ""; do
+            while $cmd -D OUTPUT ${iface}-p tcp --dport $PORT -m owner --uid-owner 0 -j ACCEPT 2>/dev/null; do :; done
+            while $cmd -D OUTPUT ${iface}-p tcp --dport $PORT -m owner --uid-owner 2000 -j ACCEPT 2>/dev/null; do :; done
+            while $cmd -D OUTPUT ${iface}-p tcp --dport $PORT -m owner --uid-owner $SCENE_UID -j ACCEPT 2>/dev/null; do :; done
+            while $cmd -D OUTPUT ${iface}-p tcp --dport $PORT -j REJECT --reject-with tcp-reset 2>/dev/null; do :; done
+        done
     done
 done
 
-for cmd in iptables ip6tables; do
-    $cmd -I OUTPUT 1 -p tcp --dport $PORT -j REJECT --reject-with tcp-reset
-    $cmd -I OUTPUT 1 -p tcp --dport $PORT -m owner --uid-owner $SCENE_UID -j ACCEPT
-    $cmd -I OUTPUT 1 -p tcp --dport $PORT -m owner --uid-owner 2000 -j ACCEPT
-    $cmd -I OUTPUT 1 -p tcp --dport $PORT -m owner --uid-owner 0 -j ACCEPT
+for PORT in $PORTS; do
+    for cmd in iptables ip6tables; do
+        $cmd -I OUTPUT 1 -p tcp --dport $PORT -j REJECT --reject-with tcp-reset
+        $cmd -I OUTPUT 1 -p tcp --dport $PORT -m owner --uid-owner $SCENE_UID -j ACCEPT
+        $cmd -I OUTPUT 1 -p tcp --dport $PORT -m owner --uid-owner 2000 -j ACCEPT
+        $cmd -I OUTPUT 1 -p tcp --dport $PORT -m owner --uid-owner 0 -j ACCEPT
+    done
 done
 
-log_msg "Port hiding applied successfully. Port $PORT is blocked for unauthorized apps across all interfaces."
+log_msg "Port hiding applied successfully. Ports $PORTS are blocked for unauthorized apps across all interfaces."
