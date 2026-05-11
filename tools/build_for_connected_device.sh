@@ -60,7 +60,7 @@ fi
 echo "==> Pulling target kernel BTF from connected device"
 adb wait-for-device
 adb shell su -c 'test -r /sys/kernel/btf/vmlinux'
-adb shell su -c "mkdir -p /storage/emulated/0/Download && cp /sys/kernel/btf/vmlinux '$REMOTE_BTF' && chmod 0644 '$REMOTE_BTF'"
+adb shell su -c "cp /sys/kernel/btf/vmlinux '$REMOTE_BTF' && chmod 0644 '$REMOTE_BTF'"
 adb pull "$REMOTE_BTF" "$ROOT/vmlinux.btf" >/dev/null
 adb shell su -c "rm -f '$REMOTE_BTF'"
 

@@ -63,7 +63,7 @@ Provide one of:
 
 Recommended for GitHub Actions:
   1. Pull BTF locally:
-       adb shell su -c 'mkdir -p /storage/emulated/0/Download && cp /sys/kernel/btf/vmlinux /storage/emulated/0/Download/vmlinux.btf && chmod 0644 /storage/emulated/0/Download/vmlinux.btf'
+       adb shell su -c 'cp /sys/kernel/btf/vmlinux /storage/emulated/0/Download/vmlinux.btf && chmod 0644 /storage/emulated/0/Download/vmlinux.btf'
        adb pull /storage/emulated/0/Download/vmlinux.btf ./btf/vmlinux.btf
        adb shell su -c 'rm -f /storage/emulated/0/Download/vmlinux.btf'
   2. Commit btf/vmlinux.btf to your fork.
